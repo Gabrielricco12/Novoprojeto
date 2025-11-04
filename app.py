@@ -23,7 +23,8 @@ MEU_BUCKET_GCS = "bucket-editor-ia-12345"
 MINHA_FILA_TASKS = "fila-de-corte-video"
 # ⚠️ IMPORTANTE: ESTA DEVE SER A URL DO SEU *WORKER* PRIVADO (ex: video-editor-worker)
 # Esta NÃO é a URL da 'video-editor-api'.
-SERVICE_URL = "https://video-editor-api-777842141832.us-central1.run.app" 
+# ----------------- ✅ CORREÇÃO APLICADA ABAIXO -----------------
+SERVICE_URL = "https://video-editor-worker-777842141832.us-central1.run.app" 
 # -----------------------------------------------------------------
 # ⚠️ IMPORTANTE: SUBSTITUIR PELO EMAIL DA SUA SERVICE ACCOUNT ⚠️
 # Esta Service Account (ex: fila-de-corte-video@...) deve ter TODOS os 6 papéis abaixo:
@@ -33,7 +34,8 @@ SERVICE_URL = "https://video-editor-api-777842141832.us-central1.run.app"
 # 4. Cloud Tasks Enqueuer (Enfileirador do Cloud Tasks) - Para criar tarefas
 # 5. Service Account Token Creator (Criador de token da conta de serviço) - Para assinar URLs de upload
 # 6. Cloud Run Invoker (Invocador do Cloud Run) - Para a Tarefa autenticar no Worker
-SERVICE_ACCOUNT_EMAIL = "firebase-adminsdk-fbsvc@strategic-haven-468504-u5.iam.gserviceaccount.com" 
+# ----------------- ✅ CORREÇÃO APLICADA ABAIXO -----------------
+SERVICE_ACCOUNT_EMAIL = "fila-de-corte-video@strategic-haven-468504-u5.iam.gserviceaccount.com" 
 # -----------------------------------------------------------------
 
 
@@ -391,3 +393,4 @@ def worker_processar_job():
 # --- Ponto de Entrada ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
+
