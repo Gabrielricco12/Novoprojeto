@@ -21,21 +21,20 @@ MEU_PROJECT_ID = "strategic-haven-468504-u5"
 MINHA_LOCATION = "us-central1" 
 MEU_BUCKET_GCS = "bucket-editor-ia-12345"
 MINHA_FILA_TASKS = "fila-de-corte-video"
-# ⚠️ IMPORTANTE: ESTA DEVE SER A URL DO SEU *WORKER* PRIVADO (ex: video-editor-worker)
-# Esta NÃO é a URL da 'video-editor-api'.
-# ----------------- ✅ CORREÇÃO APLICADA ABAIXO -----------------
+
+# --- ✅ CORREÇÃO DAS CONTAS DE SERVIÇO ---
+
+# Esta é a conta de serviço QUE RODA ESTA API (video-editor-api).
+# Ela precisa do papel 'Criador de token da conta de serviço' (iam.serviceAccountTokenCreator)
+# para poder assinar as URLs de upload.
+API_SERVICE_ACCOUNT_EMAIL = "firebase-adminsdk-fbsvc@strategic-haven-468504-u5.iam.gserviceaccount.com"
+
+# Esta é a conta de serviço DO SEU WORKER (video-editor-worker).
+# Ela é usada no 'oidc_token' para que o Cloud Tasks possa autenticar no worker.
+WORKER_SERVICE_ACCOUNT_EMAIL = "fila-de-corte-video@strategic-haven-468504-u5.iam.gserviceaccount.com" 
+
+# Esta é a URL do SEU WORKER (video-editor-worker).
 SERVICE_URL = "https://video-editor-worker-777842141832.us-central1.run.app" 
-# -----------------------------------------------------------------
-# ⚠️ IMPORTANTE: SUBSTITUIR PELO EMAIL DA SUA SERVICE ACCOUNT ⚠️
-# Esta Service Account (ex: fila-de-corte-video@...) deve ter TODOS os 6 papéis abaixo:
-# 1. Vertex AI User (Usuário da Vertex AI) - Para acessar o Gemini
-# 2. Storage Object Admin (Admin de Objetos do Storage) - Para ler/escrever vídeos
-# 3. Cloud Datastore User (Usuário do Cloud Datastore) - Para acessar o Firestore
-# 4. Cloud Tasks Enqueuer (Enfileirador do Cloud Tasks) - Para criar tarefas
-# 5. Service Account Token Creator (Criador de token da conta de serviço) - Para assinar URLs de upload
-# 6. Cloud Run Invoker (Invocador do Cloud Run) - Para a Tarefa autenticar no Worker
-# ----------------- ✅ CORREÇÃO APLICADA ABAIXO -----------------
-SERVICE_ACCOUNT_EMAIL = "fila-de-corte-video@strategic-haven-468504-u5.iam.gserviceaccount.com" 
 # -----------------------------------------------------------------
 
 
@@ -193,15 +192,17 @@ def gerar_url_upload():
         gcs_uri = f"uploads/{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
         blob = BUCKET.blob(gcs_uri)
         
-        # Correção do Erro 500: Removido 'service_account_email=...'
-        # A biblioteca usará automaticamente a Service Account do Cloud Run,
-        # que deve ter o papel 'Service Account Token Creator'.
+        # --- ✅ CORREÇÃO (Erro 500 / "no private key") ---
+        # Força a biblioteca a usar a API IAM (signBlob) para assinar,
+        # usando o e-mail da conta de serviço DESTA API.
         upload_url = blob.generate_signed_url(
             version="v4", 
             expiration=datetime.timedelta(minutes=15),
             method="PUT",
-            content_type=content_type
+            content_type=content_type,
+            service_account_email=API_SERVICE_ACCOUNT_EMAIL 
         )
+        # --- FIM DA CORREÇÃO ---
         
         return jsonify({"upload_url": upload_url, "gcs_uri": f"gs://{MEU_BUCKET_GCS}/{gcs_uri}"})
 
@@ -231,11 +232,10 @@ def iniciar_job_upload():
                 'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # --- ✅ CORREÇÃO (Erro 403): Adiciona autenticação para o Worker privado ---
+                # Usa a conta do WORKER para o token OIDC
                 'oidc_token': {
-                    'service_account_email': SERVICE_ACCOUNT_EMAIL
+                    'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
                 }
-                # --- FIM DA CORREÇÃO ---
             }
         }
         tasks_client.create_task(parent=tasks_queue_path, task=task)
@@ -267,11 +267,10 @@ def iniciar_job_url():
                 'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job-url',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # --- ✅ CORREÇÃO (Erro 403): Adiciona autenticação para o Worker privado ---
+                # Usa a conta do WORKER para o token OIDC
                 'oidc_token': {
-                    'service_account_email': SERVICE_ACCOUNT_EMAIL
+                    'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
                 }
-                # --- FIM DA CORREÇÃO ---
             }
         }
         tasks_client.create_task(parent=tasks_queue_path, task=task)
@@ -326,11 +325,10 @@ def worker_processar_job_url():
             'http_request': {'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # --- ✅ CORREÇÃO (Erro 403): Adiciona autenticação para o Worker privado ---
+                # Usa a conta do WORKER para o token OIDC
                 'oidc_token': {
-                    'service_account_email': SERVICE_ACCOUNT_EMAIL
+                    'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
                 }
-                # --- FIM DA CORREÇÃO ---
             }
         }
         tasks_client.create_task(parent=tasks_queue_path, task=task)
@@ -393,4 +391,3 @@ def worker_processar_job():
 # --- Ponto de Entrada ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
-
