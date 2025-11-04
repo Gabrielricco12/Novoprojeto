@@ -17,29 +17,33 @@ CORS(app) # Habilita CORS para todas as rotas
 
 # Configuração
 # -----------------------------------------------------------------
-MEU_PROJECT_ID = "strategic-haven-468504-u5"
+# --- ⚠️ PREENCHA OS VALORES DO SEU NOVO PROJETO ABAIXO ⚠️ ---
+
+MEU_PROJECT_ID = "video-editor-ia" # ex: "video-editor-ia"
 MINHA_LOCATION = "us-central1" 
-MEU_BUCKET_GCS = "bucket-editor-ia-12345"
-MINHA_FILA_TASKS = "fila-de-corte-video"
+MEU_BUCKET_GCS = "gs://meu-bucket-videos-novo" # ex: "meu-bucket-videos-novo"
+MINHA_FILA_TASKS = "minha-fila-de-corte" # ex: "minha-fila-de-corte"
 
-# --- ✅ CORREÇÃO DAS CONTAS DE SERVIÇO ---
+# --- ✅ CORREÇÃO DAS CONTAS DE SERVIÇO (Baseado na sua imagem) ---
 
-# Esta é a conta de serviço QUE RODA ESTA API (video-editor-api).
-# Ela precisa do papel 'Criador de token da conta de serviço' (iam.serviceAccountTokenCreator)
-# para poder assinar as URLs de upload.
-API_SERVICE_ACCOUNT_EMAIL = "firebase-adminsdk-fbsvc@strategic-haven-468504-u5.iam.gserviceaccount.com"
+# Esta é a conta da API (editordevideo@...)
+# Ela precisa do papel 'Criador de token da conta de serviço'.
+API_SERVICE_ACCOUNT_EMAIL = "editordevideo@video-editor-ia.gserviceaccount.com"
 
-# Esta é a conta de serviço DO SEU WORKER (video-editor-worker).
-# Ela é usada no 'oidc_token' para que o Cloud Tasks possa autenticar no worker.
-WORKER_SERVICE_ACCOUNT_EMAIL = "fila-de-corte-video@strategic-haven-468504-u5.iam.gserviceaccount.com" 
+# Esta é a conta do WORKER (editor-workerapi@...)
+# Ela é usada no 'oidc_token' para o Cloud Tasks.
+WORKER_SERVICE_ACCOUNT_EMAIL = "editor-workerapi@video-editor-ia.gserviceaccount.com" 
 
-# Esta é a URL do SEU WORKER (video-editor-worker).
-SERVICE_URL = "https://video-editor-worker-777842141832.us-central1.run.app" 
+# --- ⚠️ PREENCHA QUANDO FIZER O DEPLOY DO WORKER ⚠️ ---
+# (Esta é a URL do seu *segundo* serviço, o 'video-editor-worker')
+SERVICE_URL = "[ SUBSTITUA PELA URL DO SEU 'video-editor-worker' ]" 
+# ex: "https://video-editor-worker-xxxxxxxx-uc.a.run.app"
 # -----------------------------------------------------------------
 
 
 # Inicializa os clientes (Globais)
-db = firestore.Client(project=MEU_PROJECT_ID, database="edify")
+# Nota: O código original usava database="edify". Mantenha isso se você criou o Firestore com esse ID.
+db = firestore.Client(project=MEU_PROJECT_ID, database="edify") 
 tasks_client = tasks_v2.CloudTasksClient()
 storage_client = storage.Client(project=MEU_PROJECT_ID)
 tasks_queue_path = tasks_client.queue_path(MEU_PROJECT_ID, MINHA_LOCATION, MINHA_FILA_TASKS)
@@ -181,7 +185,6 @@ def baixa_video_url(video_url, gcs_uri_destino):
 @app.route('/gerar-url-upload', methods=['POST'])
 def gerar_url_upload():
     """ 1. Retorna uma URL assinada para upload direto para o GCS. """
-    # print("--- [SINALIZADOR V2] Rota /gerar-url-upload foi chamada. ---")
     data = request.json
     filename = data.get('filename')
     content_type = data.get('content_type')
@@ -232,10 +235,11 @@ def iniciar_job_upload():
                 'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # Usa a conta do WORKER para o token OIDC
+                # --- ✅ CORREÇÃO: Usa a conta do WORKER para o token OIDC ---
                 'oidc_token': {
                     'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
                 }
+                # --- FIM DA CORREÇÃO ---
             }
         }
         tasks_client.create_task(parent=tasks_queue_path, task=task)
@@ -267,10 +271,11 @@ def iniciar_job_url():
                 'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job-url',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # Usa a conta do WORKER para o token OIDC
+                # --- ✅ CORREÇÃO: Usa a conta do WORKER para o token OIDC ---
                 'oidc_token': {
                     'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
                 }
+                # --- FIM DA CORREÇÃO ---
             }
         }
         tasks_client.create_task(parent=tasks_queue_path, task=task)
@@ -325,10 +330,11 @@ def worker_processar_job_url():
             'http_request': {'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # Usa a conta do WORKER para o token OIDC
+                # --- ✅ CORREÇÃO: Usa a conta do WORKER para o token OIDC ---
                 'oidc_token': {
                     'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
                 }
+                # --- FIM DA CORREÇÃO ---
             }
         }
         tasks_client.create_task(parent=tasks_queue_path, task=task)
