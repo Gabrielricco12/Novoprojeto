@@ -1,8 +1,4 @@
-import { ComponentProps } from 'react';
-
-type InputProps = ComponentProps<'input'>;
-
-export function Input({ className, ...props }: InputProps) {
+export function Input({ className, ...props }) {
   return (
     <input
       className={`w-full rounded-md border border-gray-300 px-3 py-2
@@ -11,5 +7,6 @@ export function Input({ className, ...props }: InputProps) {
                   ${className}`} // Permite adicionar classes extras
       {...props}
     />
+  
   );
 }
