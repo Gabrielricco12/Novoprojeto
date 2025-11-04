@@ -1,8 +1,4 @@
-import { ComponentProps } from 'react';
-
-type ButtonProps = ComponentProps<'button'>;
-
-export function Button({ children, className, ...props }: ButtonProps) {
+export function Button({ children, className, ...props }) {
   return (
     <button
       className={`w-full rounded-md bg-blue-600 px-4 py-3 text-lg font-semibold text-white shadow-sm
