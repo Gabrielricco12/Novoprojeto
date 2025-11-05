@@ -19,12 +19,12 @@ CORS(app) # Habilita CORS para todas as rotas
 # -----------------------------------------------------------------
 # --- ⚠️ PREENCHA OS VALORES DO SEU NOVO PROJETO ABAIXO ⚠️ ---
 
-MEU_PROJECT_ID = "video-editor-ia" # ex: "video-editor-ia"
+MEU_PROJECT_ID = "video-editor-ia" # (O ID do seu novo projeto, ex: "video-editor-ia")
 MINHA_LOCATION = "us-central1" 
-MEU_BUCKET_GCS = "gs://meu-bucket-videos-novo" # ex: "meu-bucket-videos-novo"
-MINHA_FILA_TASKS = "minha-fila-de-corte" # ex: "minha-fila-de-corte"
+MEU_BUCKET_GCS = "[ SUBSTITUA PELO NOME DO SEU NOVO BUCKET ]" # (ex: "meu-bucket-videos-novo")
+MINHA_FILA_TASKS = "[ SUBSTITUA PELO NOME DA SUA NOVA FILA ]" # (ex: "minha-fila-de-corte")
 
-# --- ✅ CORREÇÃO DAS CONTAS DE SERVIÇO (Baseado na sua imagem) ---
+# --- ✅ CONTAS DE SERVIÇO CORRIGIDAS (Baseado na sua imagem) ---
 
 # Esta é a conta da API (editordevideo@...)
 # Ela precisa do papel 'Criador de token da conta de serviço'.
@@ -34,10 +34,9 @@ API_SERVICE_ACCOUNT_EMAIL = "editordevideo@video-editor-ia.gserviceaccount.com"
 # Ela é usada no 'oidc_token' para o Cloud Tasks.
 WORKER_SERVICE_ACCOUNT_EMAIL = "editor-workerapi@video-editor-ia.gserviceaccount.com" 
 
-# --- ⚠️ PREENCHA QUANDO FIZER O DEPLOY DO WORKER ⚠️ ---
-# (Esta é a URL do seu *segundo* serviço, o 'video-editor-worker')
-SERVICE_URL = "https://novoprojeto-709237674340.us-central1.run.app" 
-# ex: "https://video-editor-worker-xxxxxxxx-uc.a.run.app"
+# --- ⚠️ PREENCHA COM A URL DO SEU WORKER ⚠️ ---
+# (Esta é a URL do seu serviço 'novoprojeto')
+SERVICE_URL = "https://novoprojeto-709237674340.us-central1.run.app" # (Verifique se esta é a URL correta do seu 'novoprojeto')
 # -----------------------------------------------------------------
 
 
@@ -397,4 +396,3 @@ def worker_processar_job():
 # --- Ponto de Entrada ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
-
