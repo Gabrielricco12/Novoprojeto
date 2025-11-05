@@ -7,6 +7,7 @@ from flask_cors import CORS
 
 # --- Nossas Bibliotecas ---
 from google.cloud import storage, firestore, tasks_v2
+from google.oauth2 import service_account # <-- ADICIONADO PARA A CHAVE JSON
 import vertexai
 from vertexai.generative_models import GenerativeModel, Part
 from moviepy.editor import VideoFileClip, concatenate_videoclips
@@ -19,36 +20,35 @@ CORS(app) # Habilita CORS para todas as rotas
 # -----------------------------------------------------------------
 # --- ⚠️ PREENCHA OS VALORES DO SEU NOVO PROJETO ABAIXO ⚠️ ---
 
-MEU_PROJECT_ID = "video-editor-ia" # (O ID do seu novo projeto, ex: "video-editor-ia")
+MEU_PROJECT_ID = "video-editor-ia" # (ID do seu novo projeto)
 MINHA_LOCATION = "us-central1" 
-MEU_BUCKET_GCS = "meu-bucket-videos-novo"# (ex: "meu-bucket-videos-novo")
-MINHA_FILA_TASKS = "minha-fila-de-corte" # (ex: "minha-fila-de-corte")
+MEU_BUCKET_GCS = "meu-bucket-videos-novo" # (O nome do seu bucket)
+MINHA_FILA_TASKS = "[ SUBSTITUA PELO NOME DA SUA NOVA FILA ]" # (ex: "minha-fila-de-corte")
 
-# --- ✅ CONTAS DE SERVIÇO CORRIGIDAS (Baseado na sua imagem) ---
+# --- ✅ SOLUÇÃO INSEGURA (TESTE) ---
+# O caminho para o ficheiro JSON que você descarregou
+KEY_FILE_PATH = "service-account-key.json"
+# O e-mail da conta de serviço que você descarregou (a ...-compute@...)
+SERVICE_ACCOUNT_EMAIL_PARA_OIDC = "709237674340-compute@developer.gserviceaccount.com"
+# ------------------------------------
 
-# Esta é a conta da API (editordevideo@...)
-# Ela precisa do papel 'Criador de token da conta de serviço'.
-API_SERVICE_ACCOUNT_EMAIL = "editordevideo@video-editor-ia.gserviceaccount.com"
-
-# Esta é a conta do WORKER (editor-workerapi@...)
-# Ela é usada no 'oidc_token' para o Cloud Tasks.
-WORKER_SERVICE_ACCOUNT_EMAIL = "editor-workerapi@video-editor-ia.gserviceaccount.com" 
-
-# --- ⚠️ PREENCHA COM A URL DO SEU WORKER ⚠️ ---
-# (Esta é a URL do seu serviço 'novoprojeto')
-SERVICE_URL = "https://novoprojeto-709237674340.us-central1.run.app" # (Verifique se esta é a URL correta do seu 'novoprojeto')
+# URL do seu Worker ('novoprojeto')
+SERVICE_URL = "https://novoprojeto-709237674340.us-central1.run.app" 
 # -----------------------------------------------------------------
 
 
-# Inicializa os clientes (Globais)
-# Nota: O código original usava database="edify". Mantenha isso se você criou o Firestore com esse ID.
-db = firestore.Client(project=MEU_PROJECT_ID, database="edify") 
-tasks_client = tasks_v2.CloudTasksClient()
-storage_client = storage.Client(project=MEU_PROJECT_ID)
+# --- ✅ INICIALIZANDO CLIENTES COM A CHAVE JSON ---
+# Isto corrige o erro 'FileNotFoundError' (assumindo que o ficheiro existe agora)
+credentials = service_account.Credentials.from_service_account_file(KEY_FILE_PATH)
+
+db = firestore.Client(project=MEU_PROJECT_ID, database="edify", credentials=credentials)
+tasks_client = tasks_v2.CloudTasksClient(credentials=credentials)
+storage_client = storage.Client(project=MEU_PROJECT_ID, credentials=credentials)
 tasks_queue_path = tasks_client.queue_path(MEU_PROJECT_ID, MINHA_LOCATION, MINHA_FILA_TASKS)
 BUCKET = storage_client.bucket(MEU_BUCKET_GCS)
-vertexai.init(project=MEU_PROJECT_ID, location=MINHA_LOCATION)
+vertexai.init(project=MEU_PROJECT_ID, location=MINHA_LOCATION, credentials=credentials)
 AI_MODEL = GenerativeModel("gemini-2.5-flash") # Usando 1.5-flash para garantir
+# --- FIM DA INICIALIZAÇÃO COM CHAVE ---
 
 
 # #######################################################################
@@ -194,17 +194,17 @@ def gerar_url_upload():
         gcs_uri = f"uploads/{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
         blob = BUCKET.blob(gcs_uri)
         
-        # --- ✅ CORREÇÃO (Erro 500 / "no private key") ---
-        # Força a biblioteca a usar a API IAM (signBlob) para assinar,
-        # usando o e-mail da conta de serviço DESTA API.
+        # --- ⏪ REVERTIDO PARA O MÉTODO DE CHAVE JSON ---
+        # Como estamos a usar um ficheiro .json, a chave privada está disponível.
+        # O erro "no private key" não acontecerá.
         upload_url = blob.generate_signed_url(
             version="v4", 
             expiration=datetime.timedelta(minutes=15),
             method="PUT",
-            content_type=content_type,
-            service_account_email=API_SERVICE_ACCOUNT_EMAIL 
+            content_type=content_type
+            # A linha 'service_account_email=...' foi removida
         )
-        # --- FIM DA CORREÇÃO ---
+        # --- FIM DA REVERSÃO ---
         
         return jsonify({"upload_url": upload_url, "gcs_uri": f"gs://{MEU_BUCKET_GCS}/{gcs_uri}"})
 
@@ -234,9 +234,9 @@ def iniciar_job_upload():
                 'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # --- ✅ CORREÇÃO: Usa a conta do WORKER para o token OIDC ---
+                # --- ✅ CORREÇÃO: Usa o e-mail da conta para o OIDC Token ---
                 'oidc_token': {
-                    'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
+                    'service_account_email': SERVICE_ACCOUNT_EMAIL_PARA_OIDC
                 }
                 # --- FIM DA CORREÇÃO ---
             }
@@ -270,9 +270,9 @@ def iniciar_job_url():
                 'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job-url',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # --- ✅ CORREÇÃO: Usa a conta do WORKER para o token OIDC ---
+                # --- ✅ CORREÇÃO: Usa o e-mail da conta para o OIDC Token ---
                 'oidc_token': {
-                    'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
+                    'service_account_email': SERVICE_ACCOUNT_EMAIL_PARA_OIDC
                 }
                 # --- FIM DA CORREÇÃO ---
             }
@@ -329,9 +329,9 @@ def worker_processar_job_url():
             'http_request': {'http_method': tasks_v2.HttpMethod.POST, 'url': f'{SERVICE_URL}/processar-job',
                 'headers': {'Content-type': 'application/json'}, 'body': payload.encode(),
                 
-                # --- ✅ CORREÇÃO: Usa a conta do WORKER para o token OIDC ---
+                # --- ✅ CORREÇÃO: Usa o e-mail da conta para o OIDC Token ---
                 'oidc_token': {
-                    'service_account_email': WORKER_SERVICE_ACCOUNT_EMAIL
+                    'service_account_email': SERVICE_ACCOUNT_EMAIL_PARA_OIDC
                 }
                 # --- FIM DA CORREÇÃO ---
             }
@@ -396,4 +396,3 @@ def worker_processar_job():
 # --- Ponto de Entrada ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
-
