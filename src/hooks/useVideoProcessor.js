@@ -8,7 +8,10 @@ import axios from 'axios';
 // =======================================================
 
 // --- CONFIGURAÇÃO ---
-const API_BASE_URL = "https://video-editor-api-777842141832.us-central1.run.app";
+// --- ✅ CORREÇÃO APLICADA ABAIXO ---
+// (Substitua pela URL do seu NOVO serviço 'editar-video-api' do projeto 'video-editor-ia')
+const API_BASE_URL = "[ COLE AQUI A URL DO SEU NOVO 'editar-video-api' ]";
+// Ex: "https://editar-video-api-xxxxxxxx-uc.a.run.app"
 // --------------------
 
 const apiClient = axios.create({
@@ -167,13 +170,14 @@ export function useVideoProcessor() {
         });
         setStatus('2/4: Fazendo upload do vídeo...');
         await InternalApiService.uploadFileToGCS(upload_url, file, (p) => setProgress(p));
-        setStatus('3/4: Iniciando processamento...');
+        setStatus('3.5/4: Iniciando processamento...'); // Corrigido
         const { job_id } = await InternalApiService.startUploadJob({ gcs_uri, prompt });
         setStatus('4/4: Aguardando na fila da nuvem...');
         startJob(job_id, prompt, file.name);
       } catch (err) {
         console.error(err);
-        setError(err.message || 'Falha ao iniciar o job de upload.');
+        const errorMsg = err.response?.data?.error || err.message || 'Falha ao iniciar o job de upload.';
+        setError(errorMsg);
         setIsLoading(false);
       }
     },
@@ -185,7 +189,7 @@ export function useVideoProcessor() {
       setIsLoading(true);
       setError(null); setProgress(0); setDownloadUrl(null); setJobId(null);
       try {
-        setStatus('1/2: Solicitando job a partir da URL...');
+        setStatus('1.5/2: Solicitando job a partir da URL...'); // Corrigido
         const { job_id } = await InternalApiService.startUrlJob({
           video_url: videoUrl, prompt: prompt,
         });
@@ -193,7 +197,8 @@ export function useVideoProcessor() {
         startJob(job_id, prompt, videoUrl);
       } catch (err) {
         console.error(err);
-        setError(err.message || 'Falha ao iniciar o job de URL.');
+        const errorMsg = err.response?.data?.error || err.message || 'Falha ao iniciar o job de URL.';
+        setError(errorMsg);
         setIsLoading(false);
       }
     },
