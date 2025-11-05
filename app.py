@@ -36,7 +36,7 @@ WORKER_SERVICE_ACCOUNT_EMAIL = "editor-workerapi@video-editor-ia.gserviceaccount
 
 # --- ⚠️ PREENCHA QUANDO FIZER O DEPLOY DO WORKER ⚠️ ---
 # (Esta é a URL do seu *segundo* serviço, o 'video-editor-worker')
-SERVICE_URL = "[ SUBSTITUA PELA URL DO SEU 'video-editor-worker' ]" 
+SERVICE_URL = "https://novoprojeto-709237674340.us-central1.run.app" 
 # ex: "https://video-editor-worker-xxxxxxxx-uc.a.run.app"
 # -----------------------------------------------------------------
 
@@ -397,3 +397,4 @@ def worker_processar_job():
 # --- Ponto de Entrada ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
+
