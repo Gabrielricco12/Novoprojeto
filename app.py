@@ -21,8 +21,8 @@ CORS(app) # Habilita CORS para todas as rotas
 
 MEU_PROJECT_ID = "video-editor-ia" # (O ID do seu novo projeto, ex: "video-editor-ia")
 MINHA_LOCATION = "us-central1" 
-MEU_BUCKET_GCS = "[ SUBSTITUA PELO NOME DO SEU NOVO BUCKET ]" # (ex: "meu-bucket-videos-novo")
-MINHA_FILA_TASKS = "[ SUBSTITUA PELO NOME DA SUA NOVA FILA ]" # (ex: "minha-fila-de-corte")
+MEU_BUCKET_GCS = "meu-bucket-videos-novo"# (ex: "meu-bucket-videos-novo")
+MINHA_FILA_TASKS = "minha-fila-de-corte" # (ex: "minha-fila-de-corte")
 
 # --- ✅ CONTAS DE SERVIÇO CORRIGIDAS (Baseado na sua imagem) ---
 
@@ -396,3 +396,4 @@ def worker_processar_job():
 # --- Ponto de Entrada ---
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
+
