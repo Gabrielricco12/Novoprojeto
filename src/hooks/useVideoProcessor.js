@@ -10,7 +10,7 @@ import axios from 'axios';
 // --- CONFIGURAÇÃO ---
 // --- ✅ CORREÇÃO APLICADA ABAIXO ---
 // (Substitua pela URL do seu NOVO serviço 'editar-video-api' do projeto 'video-editor-ia')
-const API_BASE_URL = "[ COLE AQUI A URL DO SEU NOVO 'editar-video-api' ]";
+const API_BASE_URL = "https://editar-video-api-709237674340.us-central1.run.app";
 // Ex: "https://editar-video-api-xxxxxxxx-uc.a.run.app"
 // --------------------
 
@@ -210,3 +210,4 @@ export function useVideoProcessor() {
     submitFileJob, submitUrlJob,
   };
 }
+
